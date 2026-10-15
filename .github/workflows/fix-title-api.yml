@@ -1,0 +1,38 @@
+name: Fix title grading API URL
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-title-api.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Point GitHub Pages grading to Render
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          old="const response=await fetch('/api/grade',{"
+          new="const response=await fetch((location.hostname==='k-oota-pixel.github.io'?'https://eiken-title.onrender.com':'')+'/api/grade',{"
+          for name in ('index.html','public/index.html'):
+              p=Path(name)
+              s=p.read_text(encoding='utf-8')
+              if new in s:
+                  continue
+              if old not in s:
+                  raise SystemExit(f'grade fetch target not found in {name}')
+              p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
+      - name: Commit fix
+        run: |
+          if git diff --quiet -- index.html public/index.html; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html public/index.html
+          git commit -m "Fix Gemini title grading endpoint"
+          git push
