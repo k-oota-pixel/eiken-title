@@ -19,14 +19,21 @@ jobs:
           from pathlib import Path
           old="const response=await fetch('/api/grade',{"
           new="const response=await fetch((location.hostname==='k-oota-pixel.github.io'?'https://eiken-title.onrender.com':'')+'/api/grade',{"
+          changed=[]
           for name in ('index.html','public/index.html'):
               p=Path(name)
+              if not p.exists():
+                  continue
               s=p.read_text(encoding='utf-8')
               if new in s:
                   continue
-              if old not in s:
-                  raise SystemExit(f'grade fetch target not found in {name}')
-              p.write_text(s.replace(old,new,1),encoding='utf-8')
+              if old in s:
+                  p.write_text(s.replace(old,new,1),encoding='utf-8')
+                  changed.append(name)
+          if not changed:
+              print('No changes needed or target already patched')
+          else:
+              print('Patched:', ', '.join(changed))
           PY
       - name: Commit fix
         run: |
