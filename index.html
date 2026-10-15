@@ -27,7 +27,7 @@ async function askServer(p,payload){
   const body=IS_TITLE
     ? {passage_id:p.id,student_title:payload.student_title}
     : {passage_id:p.id,answers:payload.answers.map(a=>({number:a.number,answer:a.answer}))};
-  const response=await fetch('/api/grade',{
+  const response=await fetch((location.hostname==='k-oota-pixel.github.io'?'https://eiken-title.onrender.com':'')+'/api/grade',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(body),
