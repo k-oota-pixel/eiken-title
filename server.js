@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {gradeReadingSummary,readingStatus} from './reading-summary.js';
 import {readFileSync} from 'node:fs';
 
 const data=JSON.parse(readFileSync(new URL('./data.json',import.meta.url),'utf8')).passages;
@@ -141,7 +142,9 @@ export const server=http.createServer(async(req,res)=>{
     return res.end(html);
   }
   if(req.method==='GET'&&path==='/health')return send(res,200,{ok:true});
-  if(req.method!=='POST'||path!=='/api/grade')return send(res,404,{error:'ページが見つかりません。'});
+  if(req.method==='GET'&&path==='/api/reading/status')return send(res,200,readingStatus());
+  const isReading=path==='/api/reading/summary';
+  if(req.method!=='POST'||(!isReading&&path!=='/api/grade'))return send(res,404,{error:'ページが見つかりません。'});
 
   const ip=(req.headers['x-forwarded-for']||req.socket.remoteAddress||'').toString().split(',').pop().trim();
   const now=Date.now(),bucket=buckets.get(ip);
@@ -154,11 +157,11 @@ export const server=http.createServer(async(req,res)=>{
   try{
     for await(const chunk of req){
       raw+=chunk;
-      if(Buffer.byteLength(raw)>5000){send(res,413,{error:'回答が長すぎます。'});return;}
+      if(Buffer.byteLength(raw)>(isReading?10000:5000)){send(res,413,{error:'回答が長すぎます。'});return;}
     }
     let body;
     try{body=JSON.parse(raw);}catch{return send(res,400,{error:'送信内容を読み取れません。'});}
-    const result=await grade(body);
+    const result=await (isReading?gradeReadingSummary(body):grade(body));
     send(res,200,result);
   }catch(e){
     send(res,e.status||502,{error:e.message||'判定できませんでした。'});
