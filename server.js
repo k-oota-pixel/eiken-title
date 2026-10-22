@@ -150,7 +150,7 @@ export const server=http.createServer(async(req,res)=>{
     res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff'});
     return res.end(html);
   }
-  if(req.method==='GET'&&path==='/health')return send(res,200,{ok:true});
+  if(req.method==='GET'&&path==='/health')return send(res,200,{securityVersion:'2026-10-22',aiAuthRequired:true,appCheckMode:process.env.APP_CHECK_MODE||'monitor',ok:true});
   if(req.method==='GET'&&path==='/api/reading/status')return send(res,200,readingStatus());
   const isReading=path==='/api/reading/summary';
   if(req.method!=='POST'||(!isReading&&path!=='/api/grade'))return send(res,404,{error:'ページが見つかりません。'});
