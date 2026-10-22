@@ -16,13 +16,17 @@ test('summary validates trusted lesson, bounded input and complete model result'
  }finally{globalThis.fetch=originalFetch;if(originalKey===undefined)delete process.env.GEMINI_API_KEY;else process.env.GEMINI_API_KEY=originalKey;}
 });
 test('new HTTP endpoint keeps title endpoint and CORS behavior',async()=>{
+ const originalFetch=globalThis.fetch;
+ const token='header.'+Buffer.from(JSON.stringify({aud:'eiken-retry',iss:'https://securetoken.google.com/eiken-retry',sub:'learner'})).toString('base64url')+'.signature';
+ const headers={'Content-Type':'application/json',Authorization:'Bearer '+token};
+ globalThis.fetch=async(url,options)=>String(url).includes('identitytoolkit.googleapis.com')?new Response(JSON.stringify({users:[{localId:'learner',email:'learner@example.test'}]})):originalFetch(url,options);
  process.env.NODE_ENV='test';const {server}=await import('./server.js');await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base=`http://127.0.0.1:${server.address().port}`;
  try{
   const status=await fetch(base+'/api/reading/status');assert.equal(status.status,200);assert.equal((await status.json()).passages,data.length);
   const preflight=await fetch(base+'/api/reading/summary',{method:'OPTIONS',headers:{Origin:'https://k-oota-pixel.github.io','Access-Control-Request-Method':'POST'}});assert.equal(preflight.status,204);assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),'https://k-oota-pixel.github.io');
   const denied=await fetch(base+'/api/reading/summary',{method:'POST',headers:{Origin:'https://other.example','Content-Type':'application/json'},body:'{}'});assert.equal(denied.status,403);
-  for(const path of ['/api/grade','/api/reading/summary']){const bad=await fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});assert.equal(bad.status,400);}
-  const huge=await fetch(base+'/api/reading/summary',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({summary:'あ'.repeat(4000)})});assert.equal(huge.status,413);
+  for(const path of ['/api/grade','/api/reading/summary']){const bad=await fetch(base+path,{method:'POST',headers,body:'{}'});assert.equal(bad.status,400);}
+  const huge=await fetch(base+'/api/reading/summary',{method:'POST',headers,body:JSON.stringify({summary:'あ'.repeat(4000)})});assert.equal(huge.status,413);
   assert.equal((await fetch(base+'/')).status,200);
- }finally{await new Promise(resolve=>server.close(resolve));}
+ }finally{globalThis.fetch=originalFetch;await new Promise(resolve=>server.close(resolve));}
 });
