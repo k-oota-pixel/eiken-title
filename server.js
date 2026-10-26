@@ -1,5 +1,6 @@
 import {createSecurityGate} from './security-gate.mjs';
 import http from 'node:http';
+import {requestTitleGrade} from './gemini-title.js';
 import {gradeReadingSummary,readingStatus} from './reading-summary.js';
 import {readFileSync} from 'node:fs';
 
@@ -40,53 +41,12 @@ const send=(res,status,obj)=>{
   res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
   res.end(JSON.stringify(obj));
 };
-const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const buckets=new Map();
 let active=0;
 setInterval(()=>{for(const [k,v]of buckets)if(Date.now()-v.time>60000)buckets.delete(k)},60000).unref();
 
 async function callGemini(payload){
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  const body=JSON.stringify({
-    systemInstruction:{parts:[{text:titlePrompt}]},
-    contents:[{role:'user',parts:[{text:JSON.stringify(payload)}]}],
-    generationConfig:{
-      temperature:0.1,
-      maxOutputTokens:768,
-      thinkingConfig:{thinkingLevel:'low'},
-      responseMimeType:'application/json',
-      responseSchema
-    }
-  });
-
-  for(let attempt=0;attempt<2;attempt++){
-    try{
-      const response=await fetch(url,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-goog-api-key':key},
-        signal:AbortSignal.timeout(18000),
-        body
-      });
-      if(response.ok)return await response.json();
-
-      let detail={};
-      try{detail=await response.json();}catch{}
-      const reason=(detail.error?.details||[]).find(item=>typeof item.reason==='string')?.reason;
-      const code=String(reason||detail.error?.status||'UNKNOWN').replace(/[^A-Z0-9_]/g,'').slice(0,80);
-      console.error(`Gemini ${model} HTTP ${response.status}: ${code}`);
-      if([500,502,503,504].includes(response.status)&&attempt===0){await sleep(350);continue;}
-      if(response.status===429)throw Object.assign(new Error('Geminiの利用が一時的に集中しています。少し待って、もう一度お試しください。'),{status:503});
-      if(response.status===404)throw Object.assign(new Error('AIモデルに接続できませんでした。先生がモデル設定を確認してください。'),{status:502});
-      if(response.status>=500)throw Object.assign(new Error('Gemini側で一時的なエラーが発生しました。もう一度お試しください。'),{status:503});
-      throw Object.assign(new Error(`Geminiエラー ${response.status} / ${code}`),{status:502});
-    }catch(e){
-      const timedOut=e?.name==='TimeoutError'||e?.name==='AbortError'||/timed out/i.test(String(e?.message||''));
-      if(timedOut&&attempt===0){await sleep(300);continue;}
-      if(timedOut)throw Object.assign(new Error('Geminiからの応答が遅いため、判定をやり直してください。'),{status:504});
-      throw e;
-    }
-  }
-  throw Object.assign(new Error('Geminiから応答を受け取れませんでした。もう一度お試しください。'),{status:503});
+  return requestTitleGrade({key,model,prompt:titlePrompt,schema:responseSchema,payload});
 }
 
 async function grade(body){

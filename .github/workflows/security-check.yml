@@ -10,4 +10,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test security-gate.test.mjs client-security.test.mjs api-security.test.mjs reading-summary.test.js
+      - run: node --test security-gate.test.mjs client-security.test.mjs api-security.test.mjs reading-summary.test.js gemini-title.test.js title-grade.test.js
