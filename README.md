@@ -37,6 +37,6 @@ API未設定でも４択モード（空所補充サイト）は使えます。
 
 ## タイトル判定の一時障害対策
 
-通常は `EIKEN_GEMINI_MODEL`（既定 `gemini-3.8-flash`）を使います。503等の一時障害やタイムアウトが続いた場合は、`EIKEN_GEMINI_FALLBACK_MODEL`（既定 `gemini-2.5-flash`）へ切り替えます。全3試行・待機を含め最大約45秒で、画面の60秒制限内に収めます。認証・キー設定・利用上限のエラーはモデルを切り替えません。既存APIキーを使い、入力やキーはログに出しません。
+通常は `EIKEN_GEMINI_MODEL`（既定 `gemini-3.8-flash`）を使います。503等の一時障害やタイムアウトが続いた場合は、`EIKEN_GEMINI_FALLBACK_MODEL`（既定 `gemini-3.6-flash`）へ切り替えます。全3試行・待機を含め最大約45秒で、画面の60秒制限内に収めます。認証・キー設定・利用上限のエラーはモデルを切り替えません。既存APIキーを使い、入力やキーはログに出しません。
 
 検証: `node --test gemini-title.test.js title-grade.test.js`。

@@ -2,7 +2,7 @@ const failure=(message,status)=>Object.assign(new Error(message),{status});
 
 // Keep all attempts inside the page's 60-second request timeout.
 export async function requestTitleGrade({key,model,prompt,schema,payload,
-  fallbackModel=process.env.EIKEN_GEMINI_FALLBACK_MODEL||'gemini-2.5-flash',
+  fallbackModel=process.env.EIKEN_GEMINI_FALLBACK_MODEL||'gemini-3.6-flash',
   fetchImpl=fetch,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms)),logger=console}){
   const models=[model,model];
   if(fallbackModel&&fallbackModel!==model)models.push(fallbackModel);

@@ -4,7 +4,7 @@ import {requestTitleGrade} from './gemini-title.js';
 const success={candidates:[{finishReason:'STOP',content:{parts:[{text:'{"verdict":"partial","feedback":"本文全体を表そう。","issues":[],"suggestion":"地域活動の楽しさ"}'}]}}]};
 function setup(responses){
   const calls=[],delays=[];
-  return {calls,delays,options:{key:'test-key',model:'gemini-3.8-flash',fallbackModel:'gemini-2.5-flash',prompt:'teacher',schema:{type:'OBJECT'},payload:{student_title:'たのしい'},
+  return {calls,delays,options:{key:'test-key',model:'gemini-3.8-flash',fallbackModel:'gemini-3.6-flash',prompt:'teacher',schema:{type:'OBJECT'},payload:{student_title:'たのしい'},
     logger:{error(){},warn(){}},wait:async ms=>delays.push(ms),fetchImpl:async(url,options)=>{
       calls.push({url,body:JSON.parse(options.body)});
       const next=responses.shift();if(next instanceof Error)throw next;
@@ -13,9 +13,9 @@ function setup(responses){
 }
 test('503 twice switches to another Gemini model and preserves the grading request',async()=>{
   const s=setup([503,503,200]);assert.deepEqual(await requestTitleGrade(s.options),success);
-  assert.match(s.calls[0].url,/gemini-3.8-flash/);assert.match(s.calls[1].url,/gemini-3.8-flash/);assert.match(s.calls[2].url,/gemini-2.5-flash/);
+  assert.match(s.calls[0].url,/gemini-3.8-flash/);assert.match(s.calls[1].url,/gemini-3.8-flash/);assert.match(s.calls[2].url,/gemini-3.6-flash/);
   assert.deepEqual(s.calls[2].body.contents,s.calls[0].body.contents);
-  assert.deepEqual(s.calls[2].body.generationConfig.thinkingConfig,{thinkingBudget:0});
+  assert.deepEqual(s.calls[2].body.generationConfig.thinkingConfig,{thinkingLevel:'low'});
   assert.deepEqual(s.delays,[1000,1500]);
 });
 test('timeouts can recover using the fallback',async()=>{

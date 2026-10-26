@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 test('authenticated title API returns real grading after primary model failure',async()=>{
   process.env.NODE_ENV='test';process.env.GEMINI_API_KEY='test-key';
-  process.env.EIKEN_GEMINI_MODEL='gemini-3.8-flash';process.env.EIKEN_GEMINI_FALLBACK_MODEL='gemini-2.5-flash';
+  process.env.EIKEN_GEMINI_MODEL='gemini-3.8-flash';process.env.EIKEN_GEMINI_FALLBACK_MODEL='gemini-3.6-flash';
   const nativeFetch=globalThis.fetch,calls=[];
   globalThis.fetch=async(url,options)=>{
     if(String(url).includes('identitytoolkit.googleapis.com'))return Response.json({users:[{localId:'student',email:'student@example.test'}]});
@@ -20,6 +20,6 @@ test('authenticated title API returns real grading after primary model failure',
     const data=JSON.parse(readFileSync(new URL('./data.json',import.meta.url),'utf8'));
     const response=await nativeFetch(`http://127.0.0.1:${server.address().port}/api/grade`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer header.${claims}.accepted`},body:JSON.stringify({passage_id:data.passages[0].id,student_title:'たのしい'})});
     assert.equal(response.status,200);assert.equal((await response.json()).verdict,'partial');
-    assert.equal(calls.length,3);assert.match(calls[2],/gemini-2.5-flash/);
+    assert.equal(calls.length,3);assert.match(calls[2],/gemini-3.6-flash/);
   }finally{globalThis.fetch=nativeFetch;await new Promise(resolve=>server.close(resolve));}
 });
