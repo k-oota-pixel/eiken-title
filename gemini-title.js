@@ -11,20 +11,27 @@ export async function requestTitleGrade({key,model,prompt,schema,payload,
     const current=models[attempt];
     if(attempt)await wait(attempt===1?1000:1500);
     try{
+      const generationConfig={
+        maxOutputTokens:1536,
+        thinkingConfig:current.startsWith('gemini-2.5-')?{thinkingBudget:0}:{thinkingLevel:'low'},
+        responseMimeType:'application/json',
+        responseSchema:schema
+      };
+      // Gemini 3+ works best with the default temperature; earlier models keep the low-temperature setting.
+      if(!/^gemini-[3-9](?:[.-]|$)/.test(current))generationConfig.temperature=0.1;
       const response=await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(current)}:generateContent`,{
         method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
         signal:AbortSignal.timeout(14000),
         body:JSON.stringify({systemInstruction:{parts:[{text:prompt}]},
           contents:[{role:'user',parts:[{text:JSON.stringify(payload)}]}],
-          generationConfig:{temperature:0.1,maxOutputTokens:1536,
-            thinkingConfig:current.startsWith('gemini-2.5-')?{thinkingBudget:0}:{thinkingLevel:'low'},
-            responseMimeType:'application/json',responseSchema:schema}})
+          generationConfig})
       });
       if(response.ok)return await response.json();
       let detail={};try{detail=await response.json();}catch{}
       const reason=(detail.error?.details||[]).find(item=>typeof item.reason==='string')?.reason;
       const code=String(reason||detail.error?.status||'UNKNOWN').replace(/[^A-Z0-9_]/g,'').slice(0,80);
-      logger.error(`Gemini ${current} HTTP ${response.status}: ${code}`);
+      const providerMessage=String(detail.error?.message||'').replace(/\s+/g,' ').slice(0,300);
+      logger.error(`Gemini ${current} HTTP ${response.status}: ${code}${providerMessage?` — ${providerMessage}`:''}`);
       if([500,502,503,504].includes(response.status)){
         lastError=failure('AIが一時的に混み合っています。入力を残したまま、少し待って再試行してください。',503);
         continue;
