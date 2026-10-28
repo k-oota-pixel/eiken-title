@@ -140,7 +140,7 @@ feedback と strengths は日本語で短く書いてください。実際にあ
 const grade3InterviewSchema={
  type:'OBJECT',
  properties:{results:{type:'ARRAY',items:{type:'OBJECT',properties:{
-  number:{type:'INTEGER',enum:[2,3]},score:{type:'INTEGER'},feedback:{type:'STRING'},strengths:{type:'STRING'},betterAnswer:{type:'STRING'},
+  number:{type:'INTEGER'},score:{type:'INTEGER'},feedback:{type:'STRING'},strengths:{type:'STRING'},betterAnswer:{type:'STRING'},
   corrections:{type:'ARRAY',items:{type:'OBJECT',properties:{original:{type:'STRING'},corrected:{type:'STRING'},reason:{type:'STRING'}},required:['original','corrected','reason']}}
  },required:['number','score','feedback','strengths','betterAnswer','corrections']}}},
  required:['results']
